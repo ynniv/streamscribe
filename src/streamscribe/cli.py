@@ -16,8 +16,6 @@ def _check_dependencies() -> list[str]:
     missing = []
     if shutil.which("ffmpeg") is None:
         missing.append("ffmpeg")
-    if shutil.which("yt-dlp") is None:
-        missing.append("yt-dlp")
     return missing
 
 

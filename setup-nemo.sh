@@ -41,10 +41,6 @@ echo "Installing streamscribe + dependencies (this may take a few minutes)..."
 .venv/bin/pip install --upgrade pip --quiet
 .venv/bin/pip install -e ".[cpu]" --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Fix onnx/protobuf version conflict (onnx wheels require protobuf 6.x gencode)
-echo "Fixing protobuf compatibility..."
-.venv/bin/pip install "protobuf>=6.0" --quiet
-
 # Set default engine
 echo "engine=nemo" > streamscribe.conf
 
