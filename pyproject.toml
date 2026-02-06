@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "transtream"
+version = "0.1.0"
+description = "Live transcription of YouTube videos and streams using NeMo ASR"
+requires-python = ">=3.10"
+dependencies = [
+    "yt-dlp",
+    "numpy",
+]
+
+[project.optional-dependencies]
+cpu = [
+    "torch",
+    "torchaudio",
+    "nemo_toolkit[asr]",
+]
+gpu = [
+    "torch",
+    "torchaudio",
+    "nemo_toolkit[asr]",
+]
+
+[project.scripts]
+transtream = "transtream.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/transtream"]
