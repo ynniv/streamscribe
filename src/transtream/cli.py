@@ -63,6 +63,18 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Enable speaker detection (labels output with Speaker 1, Speaker 2, ...)",
     )
     parser.add_argument(
+        "-o",
+        "--output",
+        metavar="FILE",
+        help="Write clean transcript to FILE (transcript only, no NeMo noise)",
+    )
+    parser.add_argument(
+        "-O",
+        "--auto-output",
+        action="store_true",
+        help="Write transcript to a file named after the stream title",
+    )
+    parser.add_argument(
         "--no-timestamps",
         action="store_true",
         help="Omit timestamps from output (useful for file redirection)",
@@ -102,6 +114,8 @@ def main(argv: list[str] | None = None) -> None:
         verbose=args.verbose,
         from_start=args.from_start,
         speakers=args.speakers,
+        output_file=args.output,
+        auto_output=args.auto_output,
     )
 
     try:

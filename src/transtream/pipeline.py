@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 
 from transtream.asr.model import ASRModelManager
@@ -11,6 +12,14 @@ from transtream.audio.chunker import AudioChunker
 from transtream.audio.decoder import AudioDecoder
 from transtream.audio.extractor import AudioExtractor, StreamInfo
 from transtream.exceptions import TranstreamError
+
+
+def _slugify(title: str) -> str:
+    """Turn a stream title into a safe, descriptive filename."""
+    slug = title.lower()
+    slug = re.sub(r"[^\w\s-]", "", slug)
+    slug = re.sub(r"[\s_-]+", "_", slug).strip("_")
+    return f"{slug[:80]}.txt" if slug else "transcript.txt"
 
 
 class TranscriptionPipeline:
@@ -27,6 +36,8 @@ class TranscriptionPipeline:
         verbose: bool = False,
         from_start: bool = False,
         speakers: bool = False,
+        output_file: str | None = None,
+        auto_output: bool = False,
     ) -> None:
         self._url = url
         self._model_name = model_name
@@ -37,25 +48,45 @@ class TranscriptionPipeline:
         self._verbose = verbose
         self._from_start = from_start
         self._speakers = speakers
-        self._display = TranscriptionDisplay(show_timestamps)
+        self._output_file = output_file
+        self._auto_output = auto_output
 
     def run(self) -> None:
         """Run the full pipeline. Blocks until complete or interrupted."""
+        # Use a temporary display for pre-extraction status messages
+        display = TranscriptionDisplay(self._show_timestamps)
+
         # Phase 1: Extract audio URL
-        self._display.status("Extracting audio stream URL...")
+        display.status("Extracting audio stream URL...")
         extractor = AudioExtractor()
         stream_info = extractor.extract(self._url, from_start=self._from_start)
-        self._print_stream_info(stream_info)
+
+        # Resolve output file: -O derives name from stream title
+        output_file = self._output_file
+        if self._auto_output:
+            output_file = _slugify(stream_info.title)
+
+        # Now create the real display (possibly with an output file)
+        display = TranscriptionDisplay(self._show_timestamps, output_file)
+        self._print_stream_info(display, stream_info)
+        if output_file:
+            display.status(f"Writing transcript to {output_file}")
+        display.write_header(
+            title=stream_info.title,
+            url=self._url,
+            stream_type="live" if stream_info.is_live else "video",
+            duration=stream_info.duration,
+        )
 
         # Adjust chunk size for live streams (but not when replaying from start)
         chunk_duration = self._chunk_duration
         if stream_info.is_live and not self._from_start and chunk_duration > 3.0:
             chunk_duration = 2.0
-            self._display.status(
+            display.status(
                 f"Live stream detected — using {chunk_duration}s chunks for lower latency."
             )
         if self._from_start and stream_info.is_live:
-            self._display.status("Replaying from start (faster than realtime).")
+            display.status("Replaying from start (faster than realtime).")
 
         # Phase 2: Load ASR model
         model_mgr = ASRModelManager(self._model_name, self._device)
@@ -74,7 +105,7 @@ class TranscriptionPipeline:
         segments_count = 0
         total_duration = 0.0
 
-        self._display.status("Starting transcription...\n")
+        display.status("Starting transcription...\n")
 
         try:
             with AudioDecoder(stream_info.audio_url, stream_info.is_live) as decoder:
@@ -86,7 +117,7 @@ class TranscriptionPipeline:
                         speaker = None
                         if diarizer is not None:
                             speaker = diarizer.identify(chunk.samples)
-                        self._display.show_text(text, chunk.timestamp, speaker)
+                        display.show_text(text, chunk.timestamp, speaker)
                         segments_count += 1
                     total_duration = chunk.timestamp + chunk.duration
 
@@ -100,16 +131,18 @@ class TranscriptionPipeline:
             print(f"\nError during transcription: {e}", file=sys.stderr)
 
         # Summary
-        self._display.status(
+        display.close()
+        display.status(
             f"\nDone — {segments_count} segments, "
             f"{total_duration:.1f}s of audio processed."
         )
 
-    def _print_stream_info(self, info: StreamInfo) -> None:
+    @staticmethod
+    def _print_stream_info(display: TranscriptionDisplay, info: StreamInfo) -> None:
         """Print stream metadata to stderr."""
         stream_type = "LIVE" if info.is_live else "video"
         duration_str = (
             f"{info.duration:.0f}s" if info.duration else "unknown duration"
         )
-        self._display.status(f"Title: {info.title}")
-        self._display.status(f"Type: {stream_type}, Duration: {duration_str}")
+        display.status(f"Title: {info.title}")
+        display.status(f"Type: {stream_type}, Duration: {duration_str}")
