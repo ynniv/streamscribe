@@ -25,6 +25,8 @@ class TranscriptionPipeline:
         context_duration: float = 1.0,
         show_timestamps: bool = True,
         verbose: bool = False,
+        from_start: bool = False,
+        speakers: bool = False,
     ) -> None:
         self._url = url
         self._model_name = model_name
@@ -33,6 +35,8 @@ class TranscriptionPipeline:
         self._context_duration = context_duration
         self._show_timestamps = show_timestamps
         self._verbose = verbose
+        self._from_start = from_start
+        self._speakers = speakers
         self._display = TranscriptionDisplay(show_timestamps)
 
     def run(self) -> None:
@@ -40,20 +44,30 @@ class TranscriptionPipeline:
         # Phase 1: Extract audio URL
         self._display.status("Extracting audio stream URL...")
         extractor = AudioExtractor()
-        stream_info = extractor.extract(self._url)
+        stream_info = extractor.extract(self._url, from_start=self._from_start)
         self._print_stream_info(stream_info)
 
-        # Adjust chunk size for live streams
+        # Adjust chunk size for live streams (but not when replaying from start)
         chunk_duration = self._chunk_duration
-        if stream_info.is_live and chunk_duration > 3.0:
+        if stream_info.is_live and not self._from_start and chunk_duration > 3.0:
             chunk_duration = 2.0
             self._display.status(
                 f"Live stream detected — using {chunk_duration}s chunks for lower latency."
             )
+        if self._from_start and stream_info.is_live:
+            self._display.status("Replaying from start (faster than realtime).")
 
         # Phase 2: Load ASR model
         model_mgr = ASRModelManager(self._model_name, self._device)
         model_mgr.load()
+
+        # Phase 2b: Load speaker model if requested
+        diarizer = None
+        if self._speakers:
+            from transtream.asr.diarizer import SpeakerDiarizer
+
+            diarizer = SpeakerDiarizer(device=model_mgr.model.device)
+            diarizer.load()
 
         # Phase 3: Decode + transcribe
         transcriber = ChunkedTranscriber(model_mgr.model, verbose=self._verbose)
@@ -69,7 +83,10 @@ class TranscriptionPipeline:
                 for chunk in chunker.chunks():
                     text = transcriber.transcribe(chunk)
                     if text:
-                        self._display.show_text(text, chunk.timestamp)
+                        speaker = None
+                        if diarizer is not None:
+                            speaker = diarizer.identify(chunk.samples)
+                        self._display.show_text(text, chunk.timestamp, speaker)
                         segments_count += 1
                     total_duration = chunk.timestamp + chunk.duration
 

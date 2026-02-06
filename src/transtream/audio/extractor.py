@@ -20,10 +20,11 @@ class StreamInfo:
 class AudioExtractor:
     """Uses yt-dlp to extract the best audio stream URL."""
 
-    def extract(self, url: str) -> StreamInfo:
+    def extract(self, url: str, from_start: bool = False) -> StreamInfo:
         """Extract audio stream info from a YouTube URL.
 
         Does not download — only resolves the direct audio URL.
+        If from_start is True, requests the live stream from its beginning.
         """
         try:
             import yt_dlp
@@ -37,6 +38,8 @@ class AudioExtractor:
             "quiet": True,
             "no_warnings": True,
         }
+        if from_start:
+            ydl_opts["live_from_start"] = True
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:

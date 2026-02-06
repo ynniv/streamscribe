@@ -14,13 +14,17 @@ class TranscriptionDisplay:
     def __init__(self, show_timestamps: bool = True) -> None:
         self._show_timestamps = show_timestamps
 
-    def show_text(self, text: str, timestamp: float) -> None:
+    def show_text(
+        self, text: str, timestamp: float, speaker: str | None = None
+    ) -> None:
         """Print a transcription segment."""
+        parts: list[str] = []
         if self._show_timestamps:
-            ts = self._format_timestamp(timestamp)
-            print(f"[{ts}] {text}", flush=True)
-        else:
-            print(text, flush=True)
+            parts.append(f"[{self._format_timestamp(timestamp)}]")
+        if speaker:
+            parts.append(f"[{speaker}]")
+        parts.append(text)
+        print(" ".join(parts), flush=True)
 
     def status(self, message: str) -> None:
         """Print a status message to stderr."""

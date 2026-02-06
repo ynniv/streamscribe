@@ -53,6 +53,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Left context overlap in seconds (default: 1.0)",
     )
     parser.add_argument(
+        "--from-start",
+        action="store_true",
+        help="Start live stream from beginning (faster than realtime)",
+    )
+    parser.add_argument(
+        "--speakers",
+        action="store_true",
+        help="Enable speaker detection (labels output with Speaker 1, Speaker 2, ...)",
+    )
+    parser.add_argument(
         "--no-timestamps",
         action="store_true",
         help="Omit timestamps from output (useful for file redirection)",
@@ -90,6 +100,8 @@ def main(argv: list[str] | None = None) -> None:
         context_duration=args.context_duration,
         show_timestamps=not args.no_timestamps,
         verbose=args.verbose,
+        from_start=args.from_start,
+        speakers=args.speakers,
     )
 
     try:
