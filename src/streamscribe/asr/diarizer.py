@@ -6,8 +6,8 @@ import sys
 
 import numpy as np
 
-from transtream.asr.transcriber import SILENCE_THRESHOLD
-from transtream.exceptions import ModelLoadError
+from streamscribe.asr.transcriber import SILENCE_THRESHOLD
+from streamscribe.exceptions import ModelLoadError
 
 # Cosine similarity threshold for matching a known speaker
 _SIMILARITY_THRESHOLD = 0.5

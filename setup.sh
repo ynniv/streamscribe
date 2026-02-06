@@ -4,7 +4,7 @@ set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
-echo "=== transtream setup ==="
+echo "=== streamscribe setup ==="
 echo
 
 # Check for ffmpeg
@@ -31,7 +31,7 @@ else
 fi
 
 echo
-echo "Installing transtream + dependencies (this may take a few minutes)..."
+echo "Installing streamscribe + dependencies (this may take a few minutes)..."
 .venv/bin/pip install --upgrade pip --quiet
 .venv/bin/pip install -e ".[cpu]" --extra-index-url https://download.pytorch.org/whl/cpu
 
@@ -41,4 +41,4 @@ echo "Fixing protobuf compatibility..."
 
 echo
 echo "=== Setup complete ==="
-echo "Run:  ./transtream.sh \"https://www.youtube.com/watch?v=VIDEO_ID\""
+echo "Run:  ./streamscribe.sh \"https://www.youtube.com/watch?v=VIDEO_ID\""

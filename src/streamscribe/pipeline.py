@@ -5,13 +5,13 @@ from __future__ import annotations
 import re
 import sys
 
-from transtream.asr.model import ASRModelManager
-from transtream.asr.output import TranscriptionDisplay
-from transtream.asr.transcriber import ChunkedTranscriber
-from transtream.audio.chunker import AudioChunker
-from transtream.audio.decoder import AudioDecoder
-from transtream.audio.extractor import AudioExtractor, StreamInfo
-from transtream.exceptions import TranstreamError
+from streamscribe.asr.model import ASRModelManager
+from streamscribe.asr.output import TranscriptionDisplay
+from streamscribe.asr.transcriber import ChunkedTranscriber
+from streamscribe.audio.chunker import AudioChunker
+from streamscribe.audio.decoder import AudioDecoder
+from streamscribe.audio.extractor import AudioExtractor, StreamInfo
+from streamscribe.exceptions import StreamscribeError
 
 
 def _slugify(title: str) -> str:
@@ -95,7 +95,7 @@ class TranscriptionPipeline:
         # Phase 2b: Load speaker model if requested
         diarizer = None
         if self._speakers:
-            from transtream.asr.diarizer import SpeakerDiarizer
+            from streamscribe.asr.diarizer import SpeakerDiarizer
 
             diarizer = SpeakerDiarizer(device=model_mgr.model.device)
             diarizer.load()
@@ -123,7 +123,7 @@ class TranscriptionPipeline:
 
         except KeyboardInterrupt:
             pass  # Handled below
-        except TranstreamError:
+        except StreamscribeError:
             raise
         except Exception as e:
             if self._verbose:

@@ -9,4 +9,4 @@ if [ ! -d "$DIR/.venv" ]; then
     echo
 fi
 
-exec "$DIR/.venv/bin/python" -m transtream "$@"
+exec "$DIR/.venv/bin/python" -m streamscribe "$@"

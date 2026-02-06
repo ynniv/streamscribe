@@ -8,7 +8,7 @@ from typing import Self
 
 import numpy as np
 
-from transtream.exceptions import AudioDecodingError
+from streamscribe.exceptions import AudioDecodingError
 
 SAMPLE_RATE = 16000
 SAMPLE_WIDTH = 2  # 16-bit = 2 bytes
@@ -57,7 +57,7 @@ class AudioDecoder:
             )
         except FileNotFoundError:
             raise AudioDecodingError(
-                "ffmpeg not found on PATH. Install ffmpeg to use transtream."
+                "ffmpeg not found on PATH. Install ffmpeg to use streamscribe."
             )
 
     def read_chunk(self, num_samples: int) -> np.ndarray | None:

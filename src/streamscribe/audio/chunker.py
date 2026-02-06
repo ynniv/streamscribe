@@ -7,7 +7,7 @@ from typing import Iterator
 
 import numpy as np
 
-from transtream.audio.decoder import SAMPLE_RATE, AudioDecoder
+from streamscribe.audio.decoder import SAMPLE_RATE, AudioDecoder
 
 
 @dataclass

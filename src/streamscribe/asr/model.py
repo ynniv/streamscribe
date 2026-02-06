@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from transtream.exceptions import ModelLoadError
+from streamscribe.exceptions import ModelLoadError
 
 DEFAULT_MODEL = "nvidia/parakeet-tdt-0.6b-v3"
 

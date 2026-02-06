@@ -1,4 +1,4 @@
-"""CLI entry point and argument parsing for transtream."""
+"""CLI entry point and argument parsing for streamscribe."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import argparse
 import shutil
 import sys
 
-from transtream.asr.model import DEFAULT_MODEL
-from transtream.exceptions import TranstreamError
+from streamscribe.asr.model import DEFAULT_MODEL
+from streamscribe.exceptions import StreamscribeError
 
 
 def _check_dependencies() -> list[str]:
@@ -22,7 +22,7 @@ def _check_dependencies() -> list[str]:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="transtream",
+        prog="streamscribe",
         description="Transcribe YouTube videos and live streams in real-time.",
     )
     parser.add_argument(
@@ -102,7 +102,7 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     # Lazy import to keep --help fast
-    from transtream.pipeline import TranscriptionPipeline
+    from streamscribe.pipeline import TranscriptionPipeline
 
     pipeline = TranscriptionPipeline(
         url=args.url,
@@ -122,6 +122,6 @@ def main(argv: list[str] | None = None) -> None:
         pipeline.run()
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
-    except TranstreamError as e:
+    except StreamscribeError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

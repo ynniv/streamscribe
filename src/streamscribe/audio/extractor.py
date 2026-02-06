@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from transtream.exceptions import AudioExtractionError
+from streamscribe.exceptions import AudioExtractionError
 
 
 @dataclass

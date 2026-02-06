@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from transtream.audio.chunker import AudioChunk
-from transtream.exceptions import TranscriptionError
+from streamscribe.audio.chunker import AudioChunk
+from streamscribe.exceptions import TranscriptionError
 
 # RMS energy below this threshold is treated as silence
 SILENCE_THRESHOLD = 0.005
