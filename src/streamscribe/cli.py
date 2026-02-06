@@ -6,6 +6,7 @@ import argparse
 import shutil
 import sys
 
+from streamscribe.asr.engine import resolve_engine_name
 from streamscribe.asr.model import DEFAULT_MODEL
 from streamscribe.exceptions import StreamscribeError
 
@@ -28,6 +29,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "url",
         help="YouTube video or live stream URL",
+    )
+    parser.add_argument(
+        "--engine",
+        choices=["nemo", "apple", "auto"],
+        default="auto",
+        help="ASR engine: 'nemo' (NVIDIA NeMo), 'apple' (macOS native), "
+        "or 'auto' (apple on macOS, nemo elsewhere). Default: auto",
     )
     parser.add_argument(
         "--model",
@@ -101,11 +109,22 @@ def main(argv: list[str] | None = None) -> None:
         )
         sys.exit(1)
 
+    # Validate engine + speakers compatibility
+    resolved_engine = resolve_engine_name(args.engine)
+    if args.speakers and resolved_engine == "apple":
+        print(
+            "Error: --speakers is not supported with the Apple engine. "
+            "Use --engine nemo for speaker diarization.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     # Lazy import to keep --help fast
     from streamscribe.pipeline import TranscriptionPipeline
 
     pipeline = TranscriptionPipeline(
         url=args.url,
+        engine=args.engine,
         model_name=args.model,
         device=args.device,
         chunk_duration=args.chunk_duration,

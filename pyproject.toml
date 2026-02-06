@@ -23,6 +23,10 @@ gpu = [
     "torchaudio",
     "nemo_toolkit[asr]",
 ]
+apple = [
+    "pyobjc-framework-Speech",
+    "pyobjc-framework-AVFoundation",
+]
 
 [project.scripts]
 streamscribe = "streamscribe.cli:main"

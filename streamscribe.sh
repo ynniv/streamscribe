@@ -5,7 +5,11 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Auto-setup on first run
 if [ ! -d "$DIR/.venv" ]; then
-    "$DIR/setup.sh"
+    if [[ "$(uname)" == "Darwin" ]]; then
+        "$DIR/setup-macos.sh"
+    else
+        "$DIR/setup-nemo.sh"
+    fi
     echo
 fi
 

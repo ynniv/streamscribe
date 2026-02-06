@@ -19,3 +19,7 @@ class ModelLoadError(StreamscribeError):
 
 class TranscriptionError(StreamscribeError):
     """Error during transcription inference."""
+
+
+class EngineUnavailableError(StreamscribeError):
+    """The requested ASR engine is not available on this platform."""

@@ -5,9 +5,8 @@ from __future__ import annotations
 import re
 import sys
 
-from streamscribe.asr.model import ASRModelManager
+from streamscribe.asr.engine import create_engine
 from streamscribe.asr.output import TranscriptionDisplay
-from streamscribe.asr.transcriber import ChunkedTranscriber
 from streamscribe.audio.chunker import AudioChunker
 from streamscribe.audio.decoder import AudioDecoder
 from streamscribe.audio.extractor import AudioExtractor, StreamInfo
@@ -28,7 +27,8 @@ class TranscriptionPipeline:
     def __init__(
         self,
         url: str,
-        model_name: str,
+        engine: str = "auto",
+        model_name: str = "",
         device: str = "auto",
         chunk_duration: float = 5.0,
         context_duration: float = 1.0,
@@ -40,6 +40,7 @@ class TranscriptionPipeline:
         auto_output: bool = False,
     ) -> None:
         self._url = url
+        self._engine_name = engine
         self._model_name = model_name
         self._device = device
         self._chunk_duration = chunk_duration
@@ -88,20 +89,30 @@ class TranscriptionPipeline:
         if self._from_start and stream_info.is_live:
             display.status("Replaying from start (faster than realtime).")
 
-        # Phase 2: Load ASR model
-        model_mgr = ASRModelManager(self._model_name, self._device)
-        model_mgr.load()
+        # Phase 2: Create and load ASR engine
+        engine = create_engine(
+            self._engine_name,
+            model_name=self._model_name,
+            device=self._device,
+            verbose=self._verbose,
+        )
+        display.status(f"Engine: {engine.name}")
+        engine.load()
 
         # Phase 2b: Load speaker model if requested
         diarizer = None
         if self._speakers:
-            from streamscribe.asr.diarizer import SpeakerDiarizer
+            if not engine.supports_diarization:
+                display.status(
+                    f"Warning: Speaker diarization not supported with "
+                    f"{engine.name}. Skipping."
+                )
+            else:
+                from streamscribe.asr.diarizer import SpeakerDiarizer
 
-            diarizer = SpeakerDiarizer(device=model_mgr.model.device)
-            diarizer.load()
-
-        # Phase 3: Decode + transcribe
-        transcriber = ChunkedTranscriber(model_mgr.model, verbose=self._verbose)
+                device = getattr(engine, "device", "cpu")
+                diarizer = SpeakerDiarizer(device=device)
+                diarizer.load()
         segments_count = 0
         total_duration = 0.0
 
@@ -112,7 +123,7 @@ class TranscriptionPipeline:
                 chunker = AudioChunker(decoder, chunk_duration, self._context_duration)
 
                 for chunk in chunker.chunks():
-                    text = transcriber.transcribe(chunk)
+                    text = engine.transcribe(chunk)
                     if text:
                         speaker = None
                         if diarizer is not None:

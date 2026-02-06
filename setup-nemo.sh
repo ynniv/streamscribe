@@ -4,16 +4,22 @@ set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
-echo "=== streamscribe setup ==="
+echo "=== streamscribe NeMo setup ==="
 echo
 
 # Check for ffmpeg
 if ! command -v ffmpeg &>/dev/null; then
-    echo "ffmpeg not found. Installing via Homebrew..."
-    if command -v brew &>/dev/null; then
+    echo "ffmpeg not found. Attempting to install..."
+    if command -v apt-get &>/dev/null; then
+        sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+    elif command -v dnf &>/dev/null; then
+        sudo dnf install -y ffmpeg
+    elif command -v pacman &>/dev/null; then
+        sudo pacman -S --noconfirm ffmpeg
+    elif command -v brew &>/dev/null; then
         brew install ffmpeg
     else
-        echo "Error: ffmpeg is required and Homebrew is not available to install it."
+        echo "Error: ffmpeg is required and no supported package manager was found."
         echo "Install ffmpeg manually, then re-run this script."
         exit 1
     fi
@@ -39,6 +45,10 @@ echo "Installing streamscribe + dependencies (this may take a few minutes)..."
 echo "Fixing protobuf compatibility..."
 .venv/bin/pip install "protobuf>=6.0" --quiet
 
+# Set default engine
+echo "engine=nemo" > streamscribe.conf
+
 echo
 echo "=== Setup complete ==="
+echo "Default engine: nemo"
 echo "Run:  ./streamscribe.sh \"https://www.youtube.com/watch?v=VIDEO_ID\""
