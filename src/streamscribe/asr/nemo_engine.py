@@ -39,6 +39,11 @@ class NeMoEngine:
         return self._model.device if self._model else "cpu"
 
     def load(self) -> None:
+        # Suppress NeMo's verbose INFO logging
+        import logging
+
+        logging.getLogger("nemo_logger").setLevel(logging.WARNING)
+
         self._model_mgr.load()
         self._model = self._model_mgr.model
 
