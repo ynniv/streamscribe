@@ -37,9 +37,21 @@ else
 fi
 
 echo
+
+# Detect CUDA
+if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null; then
+    echo "CUDA GPU detected — installing with GPU support..."
+    VARIANT="gpu"
+    EXTRA_INDEX=""
+else
+    echo "No CUDA GPU detected — installing CPU-only..."
+    VARIANT="cpu"
+    EXTRA_INDEX="--extra-index-url https://download.pytorch.org/whl/cpu"
+fi
+
 echo "Installing streamscribe + dependencies (this may take a few minutes)..."
 .venv/bin/pip install --upgrade pip --quiet
-.venv/bin/pip install -e ".[cpu]" --extra-index-url https://download.pytorch.org/whl/cpu
+.venv/bin/pip install -e ".[$VARIANT]" $EXTRA_INDEX
 
 # Set default engine
 echo "engine=nemo" > streamscribe.conf
