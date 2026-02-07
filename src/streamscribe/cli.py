@@ -22,11 +22,25 @@ def _check_dependencies() -> list[str]:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="streamscribe",
-        description="Transcribe YouTube videos and live streams in real-time.",
+        description="Transcribe YouTube videos, live streams, and audio devices in real-time.",
     )
     parser.add_argument(
         "url",
+        nargs="?",
+        default=None,
         help="YouTube video or live stream URL",
+    )
+    parser.add_argument(
+        "-a",
+        "--audio-source",
+        metavar="DEVICE",
+        help="Audio input device index, name, or 'default'. "
+        "Use --list-audio-sources to see available devices.",
+    )
+    parser.add_argument(
+        "--list-audio-sources",
+        action="store_true",
+        help="List available audio input devices and exit",
     )
     parser.add_argument(
         "--engine",
@@ -41,9 +55,10 @@ def _build_parser() -> argparse.ArgumentParser:
         help=f"NeMo ASR model name (default: {DEFAULT_MODEL})",
     )
     parser.add_argument(
-        "--device",
+        "--compute-device",
         choices=["cuda", "cpu", "auto"],
         default="auto",
+        dest="compute_device",
         help="Device for inference (default: auto)",
     )
     parser.add_argument(
@@ -109,6 +124,30 @@ def main(argv: list[str] | None = None) -> None:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
+    # --list-audio-sources: print and exit (only needs ffmpeg)
+    if args.list_audio_sources:
+        missing = _check_dependencies()
+        if missing:
+            print(
+                f"Error: required tools not found on PATH: {', '.join(missing)}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        from streamscribe.audio.decoder import AudioDecoder
+
+        try:
+            print(AudioDecoder.list_devices())
+        except StreamscribeError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        return
+
+    # Validate: need either url or --audio-source
+    if args.url and args.audio_source:
+        parser.error("Cannot specify both a URL and --audio-source.")
+    if not args.url and not args.audio_source:
+        parser.error("Provide a URL or use --audio-source to capture from a device.")
+
     # Validate external dependencies
     missing = _check_dependencies()
     if missing:
@@ -133,9 +172,10 @@ def main(argv: list[str] | None = None) -> None:
 
     pipeline = TranscriptionPipeline(
         url=args.url,
+        audio_source=args.audio_source,
         engine=args.engine,
         model_name=args.model,
-        device=args.device,
+        device=args.compute_device,
         chunk_duration=args.chunk_duration,
         context_duration=args.context_duration,
         show_timestamps=not args.no_timestamps,

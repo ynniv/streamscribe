@@ -9,7 +9,7 @@ from streamscribe.asr.engine import create_engine
 from streamscribe.asr.output import TranscriptionDisplay
 from streamscribe.audio.chunker import AudioChunker
 from streamscribe.audio.decoder import AudioDecoder
-from streamscribe.audio.extractor import AudioExtractor, StreamInfo
+from streamscribe.audio.extractor import AudioExtractor, StreamInfo, device_stream_info
 from streamscribe.exceptions import StreamscribeError
 
 
@@ -26,7 +26,8 @@ class TranscriptionPipeline:
 
     def __init__(
         self,
-        url: str,
+        url: str | None = None,
+        audio_source: str | None = None,
         engine: str = "auto",
         model_name: str = "",
         device: str = "auto",
@@ -42,6 +43,7 @@ class TranscriptionPipeline:
         cookies: str | None = None,
     ) -> None:
         self._url = url
+        self._audio_source = audio_source
         self._engine_name = engine
         self._model_name = model_name
         self._device = device
@@ -61,24 +63,28 @@ class TranscriptionPipeline:
         # Use a temporary display for pre-extraction status messages
         display = TranscriptionDisplay(self._show_timestamps)
 
-        # Phase 1: Extract audio URL (always cheap, no download)
-        display.status("Extracting audio stream URL...")
-        extractor = AudioExtractor()
-        stream_info = extractor.extract(
-            self._url,
-            from_start=self._from_start,
-            cookies_from_browser=self._cookies_from_browser,
-            cookies=self._cookies,
-        )
-
-        # For non-live videos, download once and use the local file
-        if not stream_info.is_live:
-            display.status("Downloading audio (cached for reruns)...")
-            stream_info = extractor.download(
+        # Phase 1: Get stream info — either from device or URL
+        if self._audio_source is not None:
+            display.status(f"Opening audio device: {self._audio_source}")
+            stream_info = device_stream_info(self._audio_source)
+        else:
+            display.status("Extracting audio stream URL...")
+            extractor = AudioExtractor()
+            stream_info = extractor.extract(
                 self._url,
+                from_start=self._from_start,
                 cookies_from_browser=self._cookies_from_browser,
                 cookies=self._cookies,
             )
+
+            # For non-live videos, download once and use the local file
+            if not stream_info.is_live:
+                display.status("Downloading audio (cached for reruns)...")
+                stream_info = extractor.download(
+                    self._url,
+                    cookies_from_browser=self._cookies_from_browser,
+                    cookies=self._cookies,
+                )
 
         # Resolve output file: -O derives name from stream title
         output_file = self._output_file
@@ -90,19 +96,22 @@ class TranscriptionPipeline:
         self._print_stream_info(display, stream_info)
         if output_file:
             display.status(f"Writing transcript to {output_file}")
+
+        source_label = self._url or f"device:{self._audio_source}"
         display.write_header(
             title=stream_info.title,
-            url=self._url,
+            url=source_label,
             stream_type="live" if stream_info.is_live else "video",
             duration=stream_info.duration,
         )
 
-        # Adjust chunk size for live streams (but not when replaying from start)
+        # Adjust chunk size for live/device input (but not when replaying from start)
         chunk_duration = self._chunk_duration
-        if stream_info.is_live and not self._from_start and chunk_duration > 3.0:
+        is_realtime = stream_info.is_live and not self._from_start
+        if is_realtime and chunk_duration > 3.0:
             chunk_duration = 2.0
             display.status(
-                f"Live stream detected — using {chunk_duration}s chunks for lower latency."
+                f"Live input detected — using {chunk_duration}s chunks for lower latency."
             )
         if self._from_start and stream_info.is_live:
             display.status("Replaying from start (faster than realtime).")

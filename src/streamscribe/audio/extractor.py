@@ -7,6 +7,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from streamscribe.audio.decoder import DEVICE_PREFIX
 from streamscribe.exceptions import AudioExtractionError
 
 _CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "streamscribe"
@@ -185,3 +186,13 @@ class AudioExtractor:
                 return ydl.extract_info(url, download=False) or {}
         except Exception:
             return {}
+
+
+def device_stream_info(device_id: str) -> StreamInfo:
+    """Create a StreamInfo for a local audio device (no yt-dlp needed)."""
+    return StreamInfo(
+        audio_url=f"{DEVICE_PREFIX}{device_id}",
+        is_live=True,
+        title=f"Audio Device ({device_id})",
+        duration=None,
+    )
