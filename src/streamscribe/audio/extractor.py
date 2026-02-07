@@ -42,6 +42,8 @@ class AudioExtractor:
         ydl_opts = {
             "quiet": True,
             "no_warnings": True,
+            "skip_download": True,
+            "ignore_no_formats_error": True,
         }
         if from_start:
             ydl_opts["live_from_start"] = True
