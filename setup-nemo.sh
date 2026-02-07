@@ -53,6 +53,10 @@ echo "Installing streamscribe + dependencies (this may take a few minutes)..."
 .venv/bin/pip install --upgrade pip --quiet
 .venv/bin/pip install -e ".[$VARIANT]" $EXTRA_INDEX
 
+# NeMo pins protobuf~=5.29 but its own onnx dep needs protobuf 6.x gencode.
+# Force protobuf to match onnx — NeMo works fine with 6.x at runtime.
+.venv/bin/pip install "protobuf>=6.0" --quiet
+
 # Set default engine
 echo "engine=nemo" > streamscribe.conf
 
