@@ -20,7 +20,13 @@ class StreamInfo:
 class AudioExtractor:
     """Uses yt-dlp to extract the best audio stream URL."""
 
-    def extract(self, url: str, from_start: bool = False) -> StreamInfo:
+    def extract(
+        self,
+        url: str,
+        from_start: bool = False,
+        cookies_from_browser: str | None = None,
+        cookies: str | None = None,
+    ) -> StreamInfo:
         """Extract audio stream info from a YouTube URL.
 
         Does not download — only resolves the direct audio URL.
@@ -40,6 +46,10 @@ class AudioExtractor:
         }
         if from_start:
             ydl_opts["live_from_start"] = True
+        if cookies_from_browser:
+            ydl_opts["cookiesfrombrowser"] = (cookies_from_browser,)
+        if cookies:
+            ydl_opts["cookiefile"] = cookies
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:

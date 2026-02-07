@@ -81,6 +81,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Write transcript to a file named after the stream title",
     )
     parser.add_argument(
+        "--cookies-from-browser",
+        metavar="BROWSER",
+        help="Browser to load cookies from (e.g. chrome, firefox). "
+        "Passed to yt-dlp for authentication.",
+    )
+    parser.add_argument(
+        "--cookies",
+        metavar="FILE",
+        help="Netscape-format cookies file for yt-dlp authentication.",
+    )
+    parser.add_argument(
         "--no-timestamps",
         action="store_true",
         help="Omit timestamps from output (useful for file redirection)",
@@ -133,6 +144,8 @@ def main(argv: list[str] | None = None) -> None:
         speakers=args.speakers,
         output_file=args.output,
         auto_output=args.auto_output,
+        cookies_from_browser=args.cookies_from_browser,
+        cookies=args.cookies,
     )
 
     try:

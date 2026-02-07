@@ -38,6 +38,8 @@ class TranscriptionPipeline:
         speakers: bool = False,
         output_file: str | None = None,
         auto_output: bool = False,
+        cookies_from_browser: str | None = None,
+        cookies: str | None = None,
     ) -> None:
         self._url = url
         self._engine_name = engine
@@ -51,6 +53,8 @@ class TranscriptionPipeline:
         self._speakers = speakers
         self._output_file = output_file
         self._auto_output = auto_output
+        self._cookies_from_browser = cookies_from_browser
+        self._cookies = cookies
 
     def run(self) -> None:
         """Run the full pipeline. Blocks until complete or interrupted."""
@@ -60,7 +64,12 @@ class TranscriptionPipeline:
         # Phase 1: Extract audio URL
         display.status("Extracting audio stream URL...")
         extractor = AudioExtractor()
-        stream_info = extractor.extract(self._url, from_start=self._from_start)
+        stream_info = extractor.extract(
+            self._url,
+            from_start=self._from_start,
+            cookies_from_browser=self._cookies_from_browser,
+            cookies=self._cookies,
+        )
 
         # Resolve output file: -O derives name from stream title
         output_file = self._output_file
