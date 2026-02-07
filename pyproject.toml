@@ -17,11 +17,13 @@ cpu = [
     "torch",
     "torchaudio",
     "nemo_toolkit[asr]~=2.4.0",
+    "onnx>=1.7.0,!=1.19.0",
 ]
 gpu = [
     "torch",
     "torchaudio",
     "nemo_toolkit[asr]~=2.4.0",
+    "onnx>=1.7.0,!=1.19.0",
 ]
 apple = [
     "pyobjc-framework-Speech",
