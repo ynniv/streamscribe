@@ -44,6 +44,7 @@ class AudioExtractor:
             "no_warnings": True,
             "skip_download": True,
             "ignore_no_formats_error": True,
+            "remote_components": {"ejs:github"},
         }
         if from_start:
             ydl_opts["live_from_start"] = True
