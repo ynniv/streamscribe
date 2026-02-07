@@ -40,7 +40,7 @@ class AudioExtractor:
             )
 
         ydl_opts = {
-            "format": "bestaudio/best",
+            "format": "bestaudio*/best*",
             "quiet": True,
             "no_warnings": True,
         }
