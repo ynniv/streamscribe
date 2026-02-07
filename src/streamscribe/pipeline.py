@@ -61,7 +61,7 @@ class TranscriptionPipeline:
         # Use a temporary display for pre-extraction status messages
         display = TranscriptionDisplay(self._show_timestamps)
 
-        # Phase 1: Extract audio URL
+        # Phase 1: Extract audio URL (always cheap, no download)
         display.status("Extracting audio stream URL...")
         extractor = AudioExtractor()
         stream_info = extractor.extract(
@@ -70,6 +70,15 @@ class TranscriptionPipeline:
             cookies_from_browser=self._cookies_from_browser,
             cookies=self._cookies,
         )
+
+        # For non-live videos, download once and use the local file
+        if not stream_info.is_live:
+            display.status("Downloading audio (cached for reruns)...")
+            stream_info = extractor.download(
+                self._url,
+                cookies_from_browser=self._cookies_from_browser,
+                cookies=self._cookies,
+            )
 
         # Resolve output file: -O derives name from stream title
         output_file = self._output_file

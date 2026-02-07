@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
 
 from streamscribe.exceptions import AudioExtractionError
+
+_CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "streamscribe"
 
 
 @dataclass
@@ -15,6 +20,7 @@ class StreamInfo:
     is_live: bool
     title: str
     duration: float | None  # None for live streams
+    local_path: Path | None = field(default=None, repr=False)
 
 
 class AudioExtractor:
@@ -82,3 +88,100 @@ class AudioExtractor:
             title=info.get("title", "Unknown"),
             duration=info.get("duration"),
         )
+
+    def download(
+        self,
+        url: str,
+        cookies_from_browser: str | None = None,
+        cookies: str | None = None,
+    ) -> StreamInfo:
+        """Download audio for a non-live video, returning a StreamInfo with local_path."""
+        try:
+            import yt_dlp
+        except ImportError:
+            raise AudioExtractionError(
+                "yt-dlp is required. Install with: pip install yt-dlp"
+            )
+
+        url_hash = hashlib.sha256(url.encode()).hexdigest()[:16]
+        _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Return cached file if it exists
+        cached = list(_CACHE_DIR.glob(f"{url_hash}.*"))
+        if cached:
+            local = cached[0]
+            # Quick metadata-only call for title/duration
+            info = self._extract_metadata(
+                url, cookies_from_browser=cookies_from_browser, cookies=cookies
+            )
+            return StreamInfo(
+                audio_url=str(local),
+                is_live=False,
+                title=info.get("title", "Unknown"),
+                duration=info.get("duration"),
+                local_path=local,
+            )
+
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "outtmpl": str(_CACHE_DIR / url_hash) + ".%(ext)s",
+            "remote_components": {"ejs:github"},
+        }
+        if cookies_from_browser:
+            ydl_opts["cookiesfrombrowser"] = (cookies_from_browser,)
+        if cookies:
+            ydl_opts["cookiefile"] = cookies
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+        except yt_dlp.utils.DownloadError as e:
+            raise AudioExtractionError(f"Failed to download audio: {e}") from e
+
+        if info is None:
+            raise AudioExtractionError("yt-dlp returned no info for the URL")
+
+        # Find the downloaded file
+        local = Path(ydl.prepare_filename(info))
+        if not local.exists():
+            for candidate in _CACHE_DIR.glob(f"{url_hash}.*"):
+                local = candidate
+                break
+
+        if not local.exists():
+            raise AudioExtractionError(f"Downloaded file not found: {local}")
+
+        return StreamInfo(
+            audio_url=str(local),
+            is_live=False,
+            title=info.get("title", "Unknown"),
+            duration=info.get("duration"),
+            local_path=local,
+        )
+
+    def _extract_metadata(
+        self,
+        url: str,
+        cookies_from_browser: str | None = None,
+        cookies: str | None = None,
+    ) -> dict:
+        """Quick metadata-only extraction (no download)."""
+        import yt_dlp
+
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "ignore_no_formats_error": True,
+            "remote_components": {"ejs:github"},
+        }
+        if cookies_from_browser:
+            opts["cookiesfrombrowser"] = (cookies_from_browser,)
+        if cookies:
+            opts["cookiefile"] = cookies
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                return ydl.extract_info(url, download=False) or {}
+        except Exception:
+            return {}
