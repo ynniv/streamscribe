@@ -42,6 +42,15 @@ class ASRModelManager:
                 '  pip install -e ".[cpu]"  (for CPU)\n'
                 '  pip install -e ".[gpu]"  (for CUDA GPU)'
             )
+        except Exception as e:
+            import platform
+
+            hint = ""
+            if platform.system() == "Darwin":
+                hint = "\nOn macOS, consider using --engine apple instead."
+            raise ModelLoadError(
+                f"Failed to import NeMo: {e}{hint}"
+            ) from e
 
         device = self._resolve_device()
         print(f"Loading model {self._model_name} on {device}...", file=sys.stderr)
