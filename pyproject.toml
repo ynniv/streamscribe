@@ -16,12 +16,12 @@ dependencies = [
 cpu = [
     "torch",
     "torchaudio",
-    "nemo_toolkit[asr]",
+    "nemo_toolkit[asr]~=2.4.0",
 ]
 gpu = [
     "torch",
     "torchaudio",
-    "nemo_toolkit[asr]",
+    "nemo_toolkit[asr]~=2.4.0",
 ]
 apple = [
     "pyobjc-framework-Speech",
