@@ -1,0 +1,19 @@
+services:
+  jitsi-bot:
+    build: .
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      # Auto-join on startup (optional — can also use the API)
+      - JITSI_ROOM_URL=${JITSI_ROOM_URL:-}
+      - JITSI_ROOM_URLS=${JITSI_ROOM_URLS:-}
+      - BOT_NAME=${BOT_NAME:-Transcription Bot}
+      - ENGINE=${ENGINE:-auto}
+      - MODEL=${MODEL:-nvidia/nemotron-speech-streaming-en-0.6b}
+      - COMPUTE_DEVICE=${COMPUTE_DEVICE:-cpu}
+      - STREAMSCRIBE_FLAGS=${STREAMSCRIBE_FLAGS:-}
+      - API_PORT=8080
+    shm_size: 256m
+    volumes:
+      - ./data/model-cache:/home/bot/.cache
+      - ./output:/output

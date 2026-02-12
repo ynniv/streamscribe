@@ -58,8 +58,6 @@ def resolve_engine_name(engine: str) -> str:
     configured = _read_config_engine()
     if configured:
         return configured
-    if platform.system() == "Darwin":
-        return "apple"
     return "nemo"
 
 

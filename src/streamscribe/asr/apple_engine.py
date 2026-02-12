@@ -85,10 +85,28 @@ class AppleSpeechEngine:
                 file=sys.stderr,
             )
 
+        # Use a background operation queue so recognition callbacks
+        # don't require the main thread's RunLoop (needed for server use)
+        from Foundation import NSOperationQueue
+        bg_queue = NSOperationQueue.alloc().init()
+        bg_queue.setName_("SpeechRecognition")
+        recognizer.setQueue_(bg_queue)
+
         self._recognizer = recognizer
         self._Speech = Speech
         self._AVFoundation = AVFoundation
         print("Apple Speech recognizer ready.", file=sys.stderr)
+
+    def transcribe_samples(self, samples: "np.ndarray") -> str | None:
+        """Raw inference on samples — no silence check or dedup."""
+        try:
+            return self._recognize_buffer(samples)
+        except TranscriptionError:
+            raise
+        except Exception as e:
+            raise TranscriptionError(
+                f"Apple Speech recognition failed: {e}"
+            ) from e
 
     def transcribe(self, chunk: AudioChunk) -> str | None:
         rms = float(np.sqrt(np.mean(chunk.samples**2)))
@@ -113,7 +131,6 @@ class AppleSpeechEngine:
         """Feed PCM samples to SFSpeechAudioBufferRecognitionRequest."""
         Speech = self._Speech
         AVFoundation = self._AVFoundation
-        from Foundation import NSRunLoop, NSDate
 
         # Create audio format: 16kHz, mono, float32
         audio_format = (
@@ -174,14 +191,9 @@ class AppleSpeechEngine:
             request, handler
         )
 
-        timeout = 30.0
-        while not event.is_set() and timeout > 0:
-            NSRunLoop.currentRunLoop().runUntilDate_(
-                NSDate.dateWithTimeIntervalSinceNow_(0.1)
-            )
-            timeout -= 0.1
-
-        if not event.is_set():
+        # Wait for the callback — using Event.wait() instead of NSRunLoop
+        # because NSRunLoop doesn't process callbacks in background threads.
+        if not event.wait(timeout=30.0):
             if self._verbose:
                 print(
                     "Warning: Apple Speech recognition timed out",

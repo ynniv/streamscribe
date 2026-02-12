@@ -21,6 +21,7 @@ class StreamInfo:
     is_live: bool
     title: str
     duration: float | None  # None for live streams
+    release_timestamp: float | None = None  # epoch when stream/video started
     local_path: Path | None = field(default=None, repr=False)
 
 
@@ -88,6 +89,7 @@ class AudioExtractor:
             is_live=bool(info.get("is_live")),
             title=info.get("title", "Unknown"),
             duration=info.get("duration"),
+            release_timestamp=info.get("release_timestamp"),
         )
 
     def download(

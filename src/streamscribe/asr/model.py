@@ -39,7 +39,7 @@ def _suppress_output():
         sys.stderr = old_err
         logging.root.setLevel(old_level)
 
-DEFAULT_MODEL = "nvidia/parakeet-tdt-0.6b-v3"
+DEFAULT_MODEL = "nvidia/nemotron-speech-streaming-en-0.6b"
 
 
 class ASRModelManager:

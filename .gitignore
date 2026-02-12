@@ -17,3 +17,6 @@ env/
 .mypy_cache/
 .ruff_cache/
 streamscribe.conf
+data/
+output/
+*.log
